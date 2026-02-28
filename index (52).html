@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TVA Master — Maîtrise la comptabilisation de la TVA</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1118;
+  --bg-card: #181b27;
+  --bg-card-hover: #1e2233;
+  --surface: #232840;
+  --border: #2a3050;
+  --text: #e8eaf0;
+  --text-dim: #8b90a8;
+  --text-muted: #5a5f78;
+  --accent: #4f8cff;
+  --accent-glow: rgba(79,140,255,0.25);
+  --success: #2dd4a0;
+  --success-bg: rgba(45,212,160,0.12);
+  --error: #ff5f6d;
+  --error-bg: rgba(255,95,109,0.12);
+  --warning: #ffb347;
+  --warning-bg: rgba(255,179,71,0.12);
+  --gold: #ffd700;
+  --tva6: #2dd4a0;
+  --tva12: #ffb347;
+  --tva21: #ff5f6d;
+  --debit: #4f8cff;
+  --credit: #e879f9;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background pattern */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: 
+    radial-gradient(ellipse at 20% 0%, rgba(79,140,255,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(232,121,249,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, rgba(45,212,160,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Grid pattern overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    linear-gradient(rgba(79,140,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79,140,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-container {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+/* ========== HEADER ========== */
+.header {
+  text-align: center;
+  padding: 40px 20px 30px;
+  position: relative;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.header-badge .dot {
+  width: 6px; height: 6px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.header h1 {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, #e879f9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.header .subtitle {
+  font-size: 1.05rem;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+/* ========== PROGRESS BAR ========== */
+.progress-section {
+  margin: 20px 0 30px;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+}
+
+.progress-stats .label { color: var(--text-dim); }
+.progress-stats .score {
+  font-family: 'Space Mono', monospace;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.progress-bar-container {
+  background: var(--surface);
+  border-radius: 10px;
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #e879f9);
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+
+/* ========== EXERCISE NAVIGATION ========== */
+.exercise-nav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.nav-dot {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-muted);
+  position: relative;
+}
+
+.nav-dot:hover { border-color: var(--accent); color: var(--text); }
+.nav-dot.active { border-color: var(--accent); background: rgba(79,140,255,0.15); color: var(--accent); }
+.nav-dot.completed { border-color: var(--success); background: rgba(45,212,160,0.12); color: var(--success); }
+.nav-dot.completed::after {
+  content: '✓';
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 16px; height: 16px;
+  background: var(--success);
+  border-radius: 50%;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-weight: 900;
+}
+
+.nav-dot.locked { opacity: 0.4; cursor: not-allowed; }
+
+/* ========== EXERCISE CARD ========== */
+.exercise-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: var(--shadow);
+  animation: slideIn 0.4s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.exercise-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), #e879f9, var(--success));
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.exercise-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.exercise-number {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(79,140,255,0.12);
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.exercise-type {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.exercise-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #fff;
+}
+
+.exercise-desc {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.exercise-desc strong { color: var(--text); font-weight: 600; }
+
+/* ========== INFO BOX ========== */
+.info-box {
+  background: rgba(79,140,255,0.08);
+  border: 1px solid rgba(79,140,255,0.2);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.info-box .icon { margin-right: 8px; }
+.info-box strong { color: var(--accent); }
+
+/* ========== SCENARIO BOX ========== */
+.scenario-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.scenario-box::before {
+  content: '🏢';
+  position: absolute;
+  top: -12px; left: 16px;
+  font-size: 1.3rem;
+  background: var(--bg-card);
+  padding: 0 8px;
+}
+
+.scenario-company {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 4px;
+  margin-top: 4px;
+}
+
+.scenario-detail {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* ========== QUESTION ITEMS ========== */
+.question-group {
+  margin-bottom: 20px;
+}
+
+.question-label {
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-bottom: 10px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.question-label .q-num {
+  font-family: 'Space Mono', monospace;
+  color: var(--accent);
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+/* Rate selection buttons */
+.rate-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rate-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  min-width: 70px;
+  text-align: center;
+}
+
+.rate-btn:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+.rate-btn.selected { border-color: var(--accent); background: rgba(79,140,255,0.15); color: var(--accent); }
+.rate-btn.correct { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+.rate-btn.wrong { border-color: var(--error); background: var(--error-bg); color: var(--error); }
+
+/* Input fields */
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.input-field {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.95rem;
+  width: 140px;
+  transition: var(--transition);
+  outline: none;
+}
+
+.input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.input-field.correct { border-color: var(--success); background: var(--success-bg); }
+.input-field.wrong { border-color: var(--error); background: var(--error-bg); }
+.input-field::placeholder { color: var(--text-muted); font-size: 0.8rem; }
+
+.input-suffix {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-family: 'Space Mono', monospace;
+}
+
+/* ========== T-ACCOUNT ========== */
+.t-account-container {
+  margin: 20px 0;
+}
+
+.t-account {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.t-account-header {
+  text-align: center;
+  padding: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.t-header-4110 { background: rgba(79,140,255,0.1); color: var(--debit); }
+.t-header-4510 { background: rgba(232,121,249,0.1); color: var(--credit); }
+
+.t-account-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 60px;
+}
+
+.t-col {
+  padding: 12px;
+}
+
+.t-col-left { border-right: 2px solid var(--border); }
+
+.t-col-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.t-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  gap: 6px;
+}
+
+.t-entry-label {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.t-entry .input-field {
+  width: 110px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
+.t-account-footer {
+  border-top: 2px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.t-footer-cell {
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.t-footer-cell:first-child { border-right: 2px solid var(--border); }
+
+/* ========== DRAG & DROP ========== */
+.drop-zone {
+  min-height: 60px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  transition: var(--transition);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.drop-zone.over { border-color: var(--accent); background: rgba(79,140,255,0.06); }
+
+.drag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: grab;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.drag-item:active { cursor: grabbing; }
+.drag-item:hover { border-color: var(--accent); }
+.drag-item .amount { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--accent); }
+
+/* ========== ACCOUNT CHOICE ========== */
+.account-choice {
+  display: flex;
+  gap: 10px;
+}
+
+.account-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.account-btn:hover { border-color: var(--accent); }
+.account-btn.selected-4110 { border-color: var(--debit); background: rgba(79,140,255,0.12); color: var(--debit); }
+.account-btn.selected-4510 { border-color: var(--credit); background: rgba(232,121,249,0.12); color: var(--credit); }
+.account-btn.correct { border-color: var(--success) !important; background: var(--success-bg) !important; color: var(--success) !important; }
+.account-btn.wrong { border-color: var(--error) !important; background: var(--error-bg) !important; color: var(--error) !important; }
+
+/* ========== BUTTONS ========== */
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 28px;
+  border-radius: 12px;
+  border: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #6c5ce7);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(79,140,255,0.3);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79,140,255,0.4); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--accent); }
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success), #00b894);
+  color: #000;
+  font-weight: 700;
+}
+.btn-success:hover { transform: translateY(-2px); }
+
+/* ========== FEEDBACK ========== */
+.feedback {
+  margin-top: 20px;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.feedback.show { display: block; }
+.feedback.success { background: var(--success-bg); border: 1px solid rgba(45,212,160,0.3); color: var(--success); }
+.feedback.error { background: var(--error-bg); border: 1px solid rgba(255,95,109,0.3); color: var(--error); }
+.feedback.partial { background: var(--warning-bg); border: 1px solid rgba(255,179,71,0.3); color: var(--warning); }
+.feedback strong { color: inherit; }
+
+/* ========== RESULTS / FINAL ========== */
+.results-screen {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.results-trophy { font-size: 4rem; margin-bottom: 16px; display: block; }
+
+.results-score {
+  font-family: 'Space Mono', monospace;
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold), #ffb347);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+
+.results-label {
+  color: var(--text-dim);
+  font-size: 1rem;
+  margin-bottom: 30px;
+}
+
+.results-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+  margin: 0 auto 30px;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.result-row .ex-name { color: var(--text-dim); }
+.result-row .ex-score { font-family: 'Space Mono', monospace; font-weight: 700; }
+.result-row .ex-score.perfect { color: var(--success); }
+.result-row .ex-score.good { color: var(--accent); }
+.result-row .ex-score.mid { color: var(--warning); }
+.result-row .ex-score.low { color: var(--error); }
+
+/* ========== TABLE ========== */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 0.88rem;
+}
+
+.data-table th {
+  background: var(--surface);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  border-bottom: 2px solid var(--border);
+}
+
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.data-table tr:hover td { background: rgba(79,140,255,0.04); }
+
+.data-table .num { font-family: 'Space Mono', monospace; font-weight: 600; }
+.data-table .rate-6 { color: var(--tva6); }
+.data-table .rate-12 { color: var(--tva12); }
+.data-table .rate-21 { color: var(--tva21); }
+
+/* ========== CALCULATION ROW ========== */
+.calc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 14px 18px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  flex-wrap: wrap;
+}
+
+.calc-label {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  min-width: 180px;
+}
+
+.calc-operator {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+.calc-value {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 640px) {
+  .header h1 { font-size: 2rem; }
+  .exercise-card { padding: 20px; }
+  .nav-dot { width: 36px; height: 36px; font-size: 0.75rem; }
+  .t-entry-label { max-width: 80px; font-size: 0.72rem; }
+  .t-entry .input-field { width: 90px; }
+  .calc-row { flex-direction: column; align-items: flex-start; }
+  .input-field { width: 120px; }
+  .rate-options { gap: 6px; }
+  .rate-btn { padding: 8px 14px; min-width: 60px; font-size: 0.85rem; }
+  .account-choice { flex-direction: column; }
+}
+
+/* ========== HIDDEN ========== */
+.hidden { display: none !important; }
+
+/* ========== TOOLTIP ========== */
+.tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  cursor: help;
+  margin-left: 6px;
+  position: relative;
+}
+
+.tip:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2a3050;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  max-width: 250px;
+  white-space: normal;
+}
+
+/* ========== WELCOME SCREEN ========== */
+.welcome-card {
+  text-align: center;
+  padding: 40px 30px;
+}
+
+.welcome-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 500px;
+  margin: 24px auto;
+  text-align: left;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.feature-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 500px) {
+  .welcome-features { grid-template-columns: 1fr; }
+}
+
+/* ========== Confetti ========== */
+.confetti-container {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 10px; height: 10px;
+  top: -10px;
+  animation: confetti-fall 3s ease-out forwards;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Explanation correction display */
+.correction-item {
+  padding: 10px 14px;
+  background: rgba(255,95,109,0.06);
+  border-left: 3px solid var(--error);
+  border-radius: 0 8px 8px 0;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.correction-item .correct-answer {
+  font-family: 'Space Mono', monospace;
+  color: var(--success);
+  font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge"><span class="dot"></span> Comptabilité 4e Technique</div>
+    <h1>TVA Master</h1>
+    <p class="subtitle">Maîtrise la comptabilisation de la TVA en Belgique</p>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-section">
+    <div class="progress-stats">
+      <span class="label">Progression</span>
+      <span class="score" id="totalScore">0 pts</span>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- NAV DOTS -->
+  <div class="exercise-nav" id="exerciseNav"></div>
+
+  <!-- CONTENT AREA -->
+  <div id="contentArea"></div>
+</div>
+
+<script>
+// ======================================================================
+// APP STATE
+// ======================================================================
+const state = {
+  currentExercise: -1, // -1 = welcome
+  scores: {},
+  completed: {},
+  totalPoints: 0,
+  maxPoints: 0
+};
+
+// ======================================================================
+// EXERCISE DEFINITIONS
+// ======================================================================
+const exercises = [
+  // ---- EX 1: TAUX DE TVA ----
+  {
+    id: 'ex1',
+    number: 1,
+    title: 'Les taux de TVA en Belgique',
+    type: 'Quiz',
+    desc: 'En Belgique, il existe trois taux de TVA : <strong>6%</strong> (produits de première nécessité), <strong>12%</strong> (taux intermédiaire) et <strong>21%</strong> (taux normal). Associe chaque produit ou service au bon taux.',
+    info: '💡 <strong>Rappel :</strong> 6% = alimentation, médicaments, livres, transports | 12% = restaurants, logement social, hébergement | 21% = taux par défaut (la plupart des biens et services)',
+    maxScore: 10,
+    questions: [
+      { text: 'Pain et croissants vendus en boulangerie', answer: '6', explanation: 'L\'alimentation de base est soumise au taux réduit de 6%.' },
+      { text: 'Achat d\'un ordinateur portable', answer: '21', explanation: 'Les équipements informatiques sont soumis au taux normal de 21%.' },
+      { text: 'Repas servi dans un restaurant', answer: '12', explanation: 'La restauration sur place est soumise au taux intermédiaire de 12%.' },
+      { text: 'Médicaments prescrits sur ordonnance', answer: '6', explanation: 'Les médicaments sont des produits de première nécessité (6%).' },
+      { text: 'Achat de mobilier de bureau', answer: '21', explanation: 'Le mobilier est soumis au taux normal de 21%.' },
+      { text: 'Nuit dans un hôtel en Belgique', answer: '12', explanation: 'L\'hébergement touristique est au taux intermédiaire de 12% depuis 2024.' },
+      { text: 'Livre scolaire de comptabilité', answer: '6', explanation: 'Les livres bénéficient du taux réduit de 6%.' },
+      { text: 'Réparation d\'une voiture au garage', answer: '21', explanation: 'Les services de réparation automobile sont au taux normal de 21%.' },
+      { text: 'Billet de train SNCB Charleroi-Bruxelles', answer: '6', explanation: 'Le transport de personnes est au taux réduit de 6%.' },
+      { text: 'Achat d\'une imprimante professionnelle', answer: '21', explanation: 'Le matériel informatique/bureautique est au taux de 21%.' }
+    ]
+  },
+  // ---- EX 2: CALCUL TVA & TVAC ----
+  {
+    id: 'ex2',
+    number: 2,
+    title: 'Calculer la TVA et le montant TVAC',
+    type: 'Calcul',
+    desc: 'À partir du montant <strong>HTVA</strong> (hors TVA), calcule le montant de la <strong>TVA</strong> et le prix <strong>TVAC</strong> (TVA comprise). Arrondis au centime.',
+    info: '💡 <strong>Formules :</strong> TVA = Montant HTVA × Taux | TVAC = Montant HTVA + TVA',
+    maxScore: 12,
+    scenario: { company: 'ÉLECTRO-MONS SRL', detail: 'Magasin d\'électroménager à Mons. Voici les factures de vente du mois de juin 2025.' },
+    questions: [
+      { desc: 'Lave-linge Samsung', htva: 549.00, rate: 21, tva: 115.29, tvac: 664.29 },
+      { desc: 'Réfrigérateur Bosch', htva: 879.00, rate: 21, tva: 184.59, tvac: 1063.59 },
+      { desc: 'Service traiteur pour inauguration', htva: 1250.00, rate: 12, tva: 150.00, tvac: 1400.00 },
+      { desc: 'Livres techniques offerts aux clients', htva: 85.00, rate: 6, tva: 5.10, tvac: 90.10 },
+      { desc: 'Installation et mise en service (main d\'œuvre)', htva: 320.00, rate: 21, tva: 67.20, tvac: 387.20 },
+      { desc: 'Four à micro-ondes LG', htva: 189.00, rate: 21, tva: 39.69, tvac: 228.69 }
+    ]
+  },
+  // ---- EX 3: TVAC → HTVA (calcul inverse) ----
+  {
+    id: 'ex3',
+    number: 3,
+    title: 'Du TVAC au HTVA : le calcul inverse',
+    type: 'Calcul',
+    desc: 'Le client te donne le prix <strong>TVAC</strong>. Retrouve le montant <strong>HTVA</strong> et la <strong>TVA</strong>. C\'est le calcul inverse, attention aux arrondis !',
+    info: '💡 <strong>Formule :</strong> HTVA = TVAC ÷ (1 + taux) | Exemple : TVAC 121 € à 21% → HTVA = 121 ÷ 1,21 = 100 €',
+    maxScore: 10,
+    scenario: { company: 'FLEURS DE WALLONIE SPRL → SRL', detail: 'Fleuriste à Charleroi. Les tickets de caisse indiquent les prix TVAC. Retrouve les montants HTVA.' },
+    questions: [
+      { desc: 'Bouquet de roses (alimentaire/fleurs)', tvac: 36.30, rate: 6, htva: 34.25, tva: 2.06 },
+      { desc: 'Vase en céramique artisanal', tvac: 48.40, rate: 21, htva: 40.00, tva: 8.40 },
+      { desc: 'Composition florale pour mariage', tvac: 181.50, rate: 21, htva: 150.00, tva: 31.50 },
+      { desc: 'Livraison express à domicile', tvac: 12.10, rate: 21, htva: 10.00, tva: 2.10 },
+      { desc: 'Lot de plantes d\'intérieur', tvac: 79.50, rate: 6, htva: 75.00, tva: 4.50 }
+    ]
+  },
+  // ---- EX 4: ACHAT OU VENTE? ----
+  {
+    id: 'ex4',
+    number: 4,
+    title: 'Achat ou vente ? Le bon compte !',
+    type: 'Classement',
+    desc: 'Pour chaque opération, détermine s\'il s\'agit d\'un <strong>achat</strong> (compte 4110 — TVA sur achats) ou d\'une <strong>vente</strong> (compte 4510 — TVA sur ventes), puis calcule le montant de TVA.',
+    info: '💡 <strong>Rappel :</strong> Compte <strong>4110</strong> = TVA sur achats (créance, DÉBIT) | Compte <strong>4510</strong> = TVA sur ventes (dette, CRÉDIT)',
+    maxScore: 14,
+    scenario: { company: 'MENUISERIE ARTIBOIS SRL', detail: 'Entreprise de menuiserie à Frameries. Voici les opérations du mois de mars 2025.' },
+    questions: [
+      { desc: 'Achat de bois chez Scierie Ardenne SA', htva: 3200.00, rate: 21, type: '4110', tva: 672.00 },
+      { desc: 'Vente d\'une cuisine équipée à M. Dupont', htva: 8500.00, rate: 21, type: '4510', tva: 1785.00 },
+      { desc: 'Achat de vis et quincaillerie chez BricoMat SRL', htva: 480.00, rate: 21, type: '4110', tva: 100.80 },
+      { desc: 'Vente de châssis à Immobilière du Sud SA', htva: 12400.00, rate: 21, type: '4510', tva: 2604.00 },
+      { desc: 'Achat d\'un véhicule utilitaire chez Garage Henrard', htva: 22000.00, rate: 21, type: '4110', tva: 4620.00 },
+      { desc: 'Facture du comptable (honoraires)', htva: 750.00, rate: 21, type: '4110', tva: 157.50 },
+      { desc: 'Vente de portes sur mesure à Hôtel Central SRL', htva: 5600.00, rate: 21, type: '4510', tva: 1176.00 }
+    ]
+  },
+  // ---- EX 5: COMPTES EN T ----
+  {
+    id: 'ex5',
+    number: 5,
+    title: 'Remplir les comptes en T',
+    type: 'Comptabilisation',
+    desc: 'Enregistre les montants de TVA dans les comptes en T adéquats (4110 et 4510). Calcule ensuite les soldes.',
+    info: '💡 <strong>Rappel :</strong> Le compte 4110 augmente au <strong>DÉBIT</strong> (achats). Le compte 4510 augmente au <strong>CRÉDIT</strong> (ventes).',
+    maxScore: 16,
+    scenario: { company: 'GARAGE MÉCAPLUS SRL', detail: 'Garage automobile à Mons. Opérations d\'avril 2025.' },
+    operations: [
+      { date: '03/04', desc: 'Achat pièces détachées - AutoParts SA', htva: 4200.00, rate: 21, type: 'achat', tva: 882.00 },
+      { date: '07/04', desc: 'Vente réparation - M. Lemaire', htva: 1850.00, rate: 21, type: 'vente', tva: 388.50 },
+      { date: '12/04', desc: 'Achat pneus - Goodyear SA', htva: 2800.00, rate: 21, type: 'achat', tva: 588.00 },
+      { date: '18/04', desc: 'Vente entretien - Transport Hainaut SRL', htva: 6400.00, rate: 21, type: 'vente', tva: 1344.00 },
+      { date: '22/04', desc: 'Achat outillage - ToolPro SA', htva: 950.00, rate: 21, type: 'achat', tva: 199.50 },
+      { date: '28/04', desc: 'Vente carrosserie - Mme Fontaine', htva: 3200.00, rate: 21, type: 'vente', tva: 672.00 }
+    ]
+  },
+  // ---- EX 6: TVA À VERSER OU RÉCUPÉRER ----
+  {
+    id: 'ex6',
+    number: 6,
+    title: 'TVA à verser ou à récupérer ?',
+    type: 'Analyse',
+    desc: 'Calcule la TVA nette pour chaque entreprise. Si le résultat est <strong>positif</strong>, l\'entreprise doit <strong>verser</strong> à l\'État. Si c\'est <strong>négatif</strong>, elle a un <strong>crédit de TVA</strong> (l\'État lui doit de l\'argent).',
+    info: '💡 <strong>Formule :</strong> TVA nette = TVA sur ventes (4510) − TVA sur achats (4110). Positif = à verser | Négatif = à récupérer',
+    maxScore: 12,
+    cases: [
+      {
+        company: 'BOUCHERIE GILLES SRL',
+        detail: 'Petite boucherie à Binche — mois de mai 2025',
+        achats: [
+          { desc: 'Achat viande - Abattoir du Hainaut SA', htva: 8500, rate: 6 },
+          { desc: 'Achat emballages - PackFood SRL', htva: 400, rate: 21 }
+        ],
+        ventes: [
+          { desc: 'Ventes comptoir (particuliers)', htva: 14200, rate: 6 },
+          { desc: 'Vente à restaurant La Table SRL', htva: 3800, rate: 6 }
+        ],
+        tvaAchats: 594.00, // 510 + 84
+        tvaVentes: 1080.00, // 852 + 228
+        net: 486.00,
+        status: 'verser'
+      },
+      {
+        company: 'INFOTECH SOLUTIONS SA',
+        detail: 'Société informatique à Charleroi — mois de juin 2025',
+        achats: [
+          { desc: 'Achat serveurs Dell', htva: 18000, rate: 21 },
+          { desc: 'Achat licences logicielles', htva: 5200, rate: 21 },
+          { desc: 'Honoraires consultant', htva: 3500, rate: 21 }
+        ],
+        ventes: [
+          { desc: 'Maintenance client Proximus', htva: 8400, rate: 21 },
+          { desc: 'Installation réseau - PME locale', htva: 4200, rate: 21 }
+        ],
+        tvaAchats: 5607.00, // 3780 + 1092 + 735
+        tvaVentes: 2646.00, // 1764 + 882
+        net: -2961.00,
+        status: 'récupérer'
+      },
+      {
+        company: 'PÂTISSERIE DOUCEURS SRL',
+        detail: 'Pâtisserie-salon de thé à Namur — mois de juillet 2025',
+        achats: [
+          { desc: 'Achat farine, beurre, sucre', htva: 2100, rate: 6 },
+          { desc: 'Achat four professionnel', htva: 9500, rate: 21 }
+        ],
+        ventes: [
+          { desc: 'Ventes pâtisseries (emporter)', htva: 6800, rate: 6 },
+          { desc: 'Service salon de thé', htva: 3200, rate: 12 }
+        ],
+        tvaAchats: 2121.00, // 126 + 1995
+        tvaVentes: 792.00, // 408 + 384
+        net: -1329.00,
+        status: 'récupérer'
+      }
+    ]
+  },
+  // ---- EX 7: SCÉNARIO COMPLET ----
+  {
+    id: 'ex7',
+    number: 7,
+    title: 'Scénario complet : le mois de la brasserie',
+    type: 'Défi Final',
+    desc: 'Tu es le comptable de la <strong>BRASSERIE DU HAINAUT SRL</strong>. Enregistre toutes les opérations du mois, remplis les comptes en T et calcule la TVA nette. Bonne chance !',
+    maxScore: 26,
+    scenario: { 
+      company: 'BRASSERIE DU HAINAUT SRL', 
+      detail: 'Brasserie artisanale à Charleroi. Tu gères la comptabilité TVA du mois de septembre 2025. Voici les factures du mois.'
+    },
+    operations: [
+      { num: 1, date: '02/09', desc: 'Achat malt et houblon - Malterie Belge SA', htva: 6800.00, rate: 6, type: 'achat', tva: 408.00 },
+      { num: 2, date: '05/09', desc: 'Vente bières - Supermarché Delhaize SA', htva: 9500.00, rate: 6, type: 'vente', tva: 570.00 },
+      { num: 3, date: '10/09', desc: 'Achat bouteilles et étiquettes - Verrerie SA', htva: 2400.00, rate: 21, type: 'achat', tva: 504.00 },
+      { num: 4, date: '14/09', desc: 'Vente repas à la taverne (sur place)', htva: 4200.00, rate: 12, type: 'vente', tva: 504.00 },
+      { num: 5, date: '18/09', desc: 'Achat cuve de brassage - BrewTech SA', htva: 15000.00, rate: 21, type: 'achat', tva: 3150.00 },
+      { num: 6, date: '22/09', desc: 'Vente bières - Café Le Central SRL', htva: 3800.00, rate: 6, type: 'vente', tva: 228.00 },
+      { num: 7, date: '25/09', desc: 'Achat publicité - Agence ComPlus SRL', htva: 1800.00, rate: 21, type: 'achat', tva: 378.00 },
+      { num: 8, date: '29/09', desc: 'Vente coffrets cadeaux - Divers particuliers', htva: 2800.00, rate: 21, type: 'vente', tva: 588.00 }
+    ]
+  }
+];
+
+// Compute max points
+state.maxPoints = exercises.reduce((sum, ex) => sum + ex.maxScore, 0);
+
+// ======================================================================
+// UTILITY FUNCTIONS
+// ======================================================================
+function fmt(n) {
+  return n.toFixed(2).replace('.', ',');
+}
+
+function parseInput(val) {
+  if (!val) return NaN;
+  return parseFloat(val.replace(',', '.').replace(/\s/g, ''));
+}
+
+function isClose(a, b, tolerance = 0.02) {
+  return Math.abs(a - b) <= tolerance;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ======================================================================
+// RENDER FUNCTIONS
+// ======================================================================
+function renderNav() {
+  const nav = document.getElementById('exerciseNav');
+  nav.innerHTML = '';
+  exercises.forEach((ex, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot';
+    dot.textContent = ex.number;
+    if (state.currentExercise === i) dot.classList.add('active');
+    if (state.completed[ex.id]) dot.classList.add('completed');
+    dot.addEventListener('click', () => goToExercise(i));
+    nav.appendChild(dot);
+  });
+}
+
+function updateProgress() {
+  const pct = state.maxPoints > 0 ? (state.totalPoints / state.maxPoints) * 100 : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('totalScore').textContent = state.totalPoints + ' / ' + state.maxPoints + ' pts';
+}
+
+function goToExercise(index) {
+  state.currentExercise = index;
+  renderNav();
+  if (index === -1) {
+    renderWelcome();
+  } else if (index >= exercises.length) {
+    renderResults();
+  } else {
+    renderExercise(exercises[index]);
+  }
+}
+
+// ======================================================================
+// WELCOME SCREEN
+// ======================================================================
+function renderWelcome() {
+  const area = document.getElementById('contentArea');
+  area.innerHTML = `
+    <div class="exercise-card welcome-card">
+      <div style="font-size:3rem;margin-bottom:12px">🧾</div>
+      <h2 style="font-size:1.6rem;font-weight:800;margin-bottom:8px;color:#fff">Bienvenue dans TVA Master !</h2>
+      <p style="color:var(--text-dim);margin-bottom:24px;line-height:1.6;max-width:500px;margin-left:auto;margin-right:auto">
+        Tu vas apprendre à maîtriser la comptabilisation de la TVA en Belgique à travers <strong style="color:var(--text)">7 exercices progressifs</strong>. 
+        Chaque exercice te rapporte des points. Prêt à relever le défi ?
+      </p>
+      <div class="welcome-features">
+        <div class="feature-item"><span class="feature-icon">🎯</span><div><strong style="color:var(--text)">Ex. 1-2</strong><br>Les taux et le calcul de la TVA</div></div>
+        <div class="feature-item"><span class="feature-icon">🔄</span><div><strong style="color:var(--text)">Ex. 3</strong><br>Le calcul inverse (TVAC → HTVA)</div></div>
+        <div class="feature-item"><span class="feature-icon">📊</span><div><strong style="color:var(--text)">Ex. 4-5</strong><br>Les comptes 4110 et 4510</div></div>
+        <div class="feature-item"><span class="feature-icon">🏆</span><div><strong style="color:var(--text)">Ex. 6-7</strong><br>Analyse et scénario complet</div></div>
+      </div>
+      <button class="btn btn-primary" onclick="goToExercise(0)" style="margin-top:10px;font-size:1.05rem;padding:14px 36px">
+        Commencer 🚀
+      </button>
+    </div>`;
+}
+
+// ======================================================================
+// RENDER EXERCISE (DISPATCHER)
+// ======================================================================
+function renderExercise(ex) {
+  switch(ex.id) {
+    case 'ex1': renderEx1(ex); break;
+    case 'ex2': renderEx2(ex); break;
+    case 'ex3': renderEx3(ex); break;
+    case 'ex4': renderEx4(ex); break;
+    case 'ex5': renderEx5(ex); break;
+    case 'ex6': renderEx6(ex); break;
+    case 'ex7': renderEx7(ex); break;
+  }
+}
+
+// ======================================================================
+// EX 1: TAUX DE TVA
+// ======================================================================
+function renderEx1(ex) {
+  const area = document.getElementById('contentArea');
+  let questionsHtml = ex.questions.map((q, i) => `
+    <div class="question-group" id="ex1q${i}">
+      <div class="question-label"><span class="q-num">${i+1}.</span> ${escHtml(q.text)}</div>
+      <div class="rate-options">
+        <button class="rate-btn" data-q="${i}" data-v="6" onclick="selectRate(this)">6%</button>
+        <button class="rate-btn" data-q="${i}" data-v="12" onclick="selectRate(this)">12%</button>
+        <button class="rate-btn" data-q="${i}" data-v="21" onclick="selectRate(this)">21%</button>
+      </div>
+    </div>
+  `).join('');
+
+  area.innerHTML = `
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <span class="exercise-number">Exercice ${ex.number}</span>
+        <span class="exercise-type">${ex.type} — ${ex.maxScore} pts</span>
+      </div>
+      <h2 class="exercise-title">${ex.title}</h2>
+      <p class="exercise-desc">${ex.desc}</p>
+      <div class="info-box">${ex.info}</div>
+      ${questionsHtml}
+      <div class="feedback" id="ex1Feedback"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="checkEx1()">Vérifier mes réponses ✓</button>
+        <button class="btn btn-secondary" onclick="goToExercise(${ex.number})">Suivant →</button>
+      </div>
+    </div>`;
+}
+
+const ex1Answers = {};
+function selectRate(btn) {
+  const q = btn.dataset.q;
+  const group = document.getElementById('ex1q' + q);
+  group.querySelectorAll('.rate-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  ex1Answers[q] = btn.dataset.v;
+}
+
+function checkEx1() {
+  const ex = exercises[0];
+  let score = 0;
+  ex.questions.forEach((q, i) => {
+    const group = document.getElementById('ex1q' + i);
+    const btns = group.querySelectorAll('.rate-btn');
+    btns.forEach(b => {
+      b.classList.remove('correct', 'wrong', 'selected');
+      b.disabled = true;
+      if (b.dataset.v === q.answer) b.classList.add('correct');
+    });
+    if (ex1Answers[i] === q.answer) {
+      score++;
+    } else if (ex1Answers[i]) {
+      const wrongBtn = group.querySelector(`[data-v="${ex1Answers[i]}"]`);
+      if (wrongBtn) wrongBtn.classList.add('wrong');
+      // Show correction
+      const correction = document.createElement('div');
+      correction.className = 'correction-item';
+      correction.innerHTML = `${q.explanation}`;
+      group.appendChild(correction);
+    } else {
+      const correction = document.createElement('div');
+      correction.className = 'correction-item';
+      correction.innerHTML = `Pas de réponse. ${q.explanation}`;
+      group.appendChild(correction);
+    }
+  });
+
+  finishExercise('ex1', score, ex.maxScore);
+}
+
+// ======================================================================
+// EX 2: CALCUL TVA & TVAC
+// ======================================================================
+function renderEx2(ex) {
+  const area = document.getElementById('contentArea');
+  let tableRows = ex.questions.map((q, i) => `
+    <tr>
+      <td>${q.desc}</td>
+      <td class="num">${fmt(q.htva)} €</td>
+      <td class="num rate-${q.rate}">${q.rate}%</td>
+      <td><input class="input-field" id="ex2tva${i}" placeholder="TVA" autocomplete="off"></td>
+      <td><input class="input-field" id="ex2tvac${i}" placeholder="TVAC" autocomplete="off"></td>
+    </tr>
+  `).join('');
+
+  area.innerHTML = `
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <span class="exercise-number">Exercice ${ex.number}</span>
+        <span class="exercise-type">${ex.type} — ${ex.maxScore} pts</span>
+      </div>
+      <h2 class="exercise-title">${ex.title}</h2>
+      <p class="exercise-desc">${ex.desc}</p>
+      <div class="info-box">${ex.info}</div>
+      <div class="scenario-box">
+        <div class="scenario-company">${ex.scenario.company}</div>
+        <div class="scenario-detail">${ex.scenario.detail}</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Description</th><th>HTVA</th><th>Taux</th><th>TVA</th><th>TVAC</th></tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div class="feedback" id="ex2Feedback"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="checkEx2()">Vérifier ✓</button>
+        <button class="btn btn-secondary" onclick="goToExercise(${ex.number})">Suivant →</button>
+      </div>
+    </div>`;
+}
+
+function checkEx2() {
+  const ex = exercises[1];
+  let score = 0;
+  ex.questions.forEach((q, i) => {
+    const tvaInput = document.getElementById('ex2tva' + i);
+    const tvacInput = document.getElementById('ex2tvac' + i);
+    const tvaVal = parseInput(tvaInput.value);
+    const tvacVal = parseInput(tvacInput.value);
+    
+    tvaInput.disabled = true;
+    tvacInput.disabled = true;
+
+    if (isClose(tvaVal, q.tva)) {
+      tvaInput.classList.add('correct');
+      score++;
+    } else {
+      tvaInput.classList.add('wrong');
+      tvaInput.value = fmt(q.tva);
+    }
+
+    if (isClose(tvacVal, q.tvac)) {
+      tvacInput.classList.add('correct');
+      score++;
+    } else {
+      tvacInput.classList.add('wrong');
+      tvacInput.value = fmt(q.tvac);
+    }
+  });
+
+  finishExercise('ex2', score, ex.maxScore);
+}
+
+// ======================================================================
+// EX 3: TVAC → HTVA
+// ======================================================================
+function renderEx3(ex) {
+  const area = document.getElementById('contentArea');
+  let tableRows = ex.questions.map((q, i) => `
+    <tr>
+      <td>${q.desc}</td>
+      <td class="num">${fmt(q.tvac)} €</td>
+      <td class="num rate-${q.rate}">${q.rate}%</td>
+      <td><input class="input-field" id="ex3htva${i}" placeholder="HTVA" autocomplete="off"></td>
+      <td><input class="input-field" id="ex3tva${i}" placeholder="TVA" autocomplete="off"></td>
+    </tr>
+  `).join('');
+
+  area.innerHTML = `
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <span class="exercise-number">Exercice ${ex.number}</span>
+        <span class="exercise-type">${ex.type} — ${ex.maxScore} pts</span>
+      </div>
+      <h2 class="exercise-title">${ex.title}</h2>
+      <p class="exercise-desc">${ex.desc}</p>
+      <div class="info-box">${ex.info}</div>
+      <div class="scenario-box">
+        <div class="scenario-company">${ex.scenario.company}</div>
+        <div class="scenario-detail">${ex.scenario.detail}</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Description</th><th>TVAC</th><th>Taux</th><th>HTVA</th><th>TVA</th></tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div class="feedback" id="ex3Feedback"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="checkEx3()">Vérifier ✓</button>
+        <button class="btn btn-secondary" onclick="goToExercise(${ex.number})">Suivant →</button>
+      </div>
+    </div>`;
+}
+
+function checkEx3() {
+  const ex = exercises[2];
+  let score = 0;
+  ex.questions.forEach((q, i) => {
+    const htvaInput = document.getElementById('ex3htva' + i);
+    const tvaInput = document.getElementById('ex3tva' + i);
+    const htvaVal = parseInput(htvaInput.value);
+    const tvaVal = parseInput(tvaInput.value);
+
+    htvaInput.disabled = true;
+    tvaInput.disabled = true;
+
+    if (isClose(htvaVal, q.htva, 0.03)) {
+      htvaInput.classList.add('correct');
+      score++;
+    } else {
+      htvaInput.classList.add('wrong');
+      htvaInput.value = fmt(q.htva);
+    }
+
+    if (isClose(tvaVal, q.tva, 0.03)) {
+      tvaInput.classList.add('correct');
+      score++;
+    } else {
+      tvaInput.classList.add('wrong');
+      tvaInput.value = fmt(q.tva);
+    }
+  });
+
+  finishExercise('ex3', score, ex.maxScore);
+}
+
+// ======================================================================
+// EX 4: ACHAT OU VENTE
+// ======================================================================
+function renderEx4(ex) {
+  const area = document.getElementById('contentArea');
+  let questionsHtml = ex.questions.map((q, i) => `
+    <div class="question-group" id="ex4q${i}">
+      <div class="question-label">
+        <span class="q-num">${i+1}.</span> ${escHtml(q.desc)} — <strong>${fmt(q.htva)} € HTVA</strong> à ${q.rate}%
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div class="account-choice" style="flex:1;min-width:250px">
+          <button class="account-btn" data-q="${i}" data-v="4110" onclick="selectAccount(this)">4110 — TVA Achats</button>
+          <button class="account-btn" data-q="${i}" data-v="4510" onclick="selectAccount(this)">4510 — TVA Ventes</button>
+        </div>
+        <div class="input-row" style="flex-shrink:0">
+          <span style="color:var(--text-dim);font-size:0.85rem">TVA :</span>
+          <input class="input-field" id="ex4tva${i}" placeholder="Montant" autocomplete="off" style="width:120px">
+          <span class="input-suffix">€</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  area.innerHTML = `
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <span class="exercise-number">Exercice ${ex.number}</span>
+        <span class="exercise-type">${ex.type} — ${ex.maxScore} pts</span>
+      </div>
+      <h2 class="exercise-title">${ex.title}</h2>
+      <p class="exercise-desc">${ex.desc}</p>
+      <div class="info-box">${ex.info}</div>
+      <div class="scenario-box">
+        <div class="scenario-company">${ex.scenario.company}</div>
+        <div class="scenario-detail">${ex.scenario.detail}</div>
+      </div>
+      ${questionsHtml}
+      <div class="feedback" id="ex4Feedback"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="checkEx4()">Vérifier ✓</button>
+        <button class="btn btn-secondary" onclick="goToExercise(${ex.number})">Suivant →</button>
+      </div>
+    </div>`;
+}
+
+const ex4Answers = {};
+function selectAccount(btn) {
+  const q = btn.dataset.q;
+  const group = document.getElementById('ex4q' + q);
+  group.querySelectorAll('.account-btn').forEach(b => b.classList.remove('selected-4110', 'selected-4510'));
+  btn.classList.add('selected-' + btn.dataset.v);
+  ex4Answers[q] = btn.dataset.v;
+}
+
+function checkEx4() {
+  const ex = exercises[3];
+  let score = 0;
+  ex.questions.forEach((q, i) => {
+    const group = document.getElementById('ex4q' + i);
+    const btns = group.querySelectorAll('.account-btn');
+    const tvaInput = document.getElementById('ex4tva' + i);
+    const tvaVal = parseInput(tvaInput.value);
+
+    btns.forEach(b => {
+      b.disabled = true;
+      b.classList.remove('selected-4110', 'selected-4510');
+      if (b.dataset.v === q.type) b.classList.add('correct');
+    });
+    tvaInput.disabled = true;
+
+    if (ex4Answers[i] === q.type) {
+      score++;
+    } else {
+      const wrongBtn = group.querySelector(`[data-v="${ex4Answers[i]}"]`);
+      if (wrongBtn) wrongBtn.classList.add('wrong');
+    }
+
+    if (isClose(tvaVal, q.tva)) {
+      tvaInput.classList.add('correct');
+      score++;
+    } else {
+      tvaInput.classList.add('wrong');
+      tvaInput.value = fmt(q.tva);
+    }
+  });
+
+  finishExercise('ex4', score, ex.maxScore);
+}
+
+// ======================================================================
+// EX 5: COMPTES EN T
+// ======================================================================
+function renderEx5(ex) {
+  const area = document.getElementById('contentArea');
+  const achats = ex.operations.filter(o => o.type === 'achat');
+  const ventes = ex.operations.filter(o => o.type === 'vente');
+  const totalAchats = achats.reduce((s, o) => s + o.tva, 0);
+  const totalVentes = ventes.reduce((s, o) => s + o.tva, 0);
+
+  // Build operation table
+  let opTable = ex.operations.map((o, i) => `
+    <tr>
+      <td>${o.date}</td>
+      <td>${o.desc}</td>
+      <td class="num">${fmt(o.htva)} €</td>
+      <td class="num rate-${o.rate}">${o.rate}%</td>
+    </tr>
+  `).join('');
+
+  // T-account entries
+  let achatEntries = achats.map((o, i) => `
+    <div class="t-entry">
+      <span class="t-entry-label">${o.date} ${o.desc.split(' - ')[1] || o.desc.substring(0,20)}</span>
+      <input class="input-field" id="ex5a${i}" placeholder="0,00" autocomplete="off">
+    </div>
+  `).join('');
+
+  let venteEntries = ventes.map((o, i) => `
+    <div class="t-entry">
+      <span class="t-entry-label">${o.date} ${o.desc.split(' - ')[1] || o.desc.substring(0,20)}</span>
+      <input class="input-field" id="ex5v${i}" placeholder="0,00" autocomplete="off">
+    </div>
+  `).join('');
+
+  area.innerHTML = `
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <span class="exercise-number">Exercice ${ex.number}</span>
+        <span class="exercise-type">${ex.type} — ${ex.maxScore} pts</span>
+      </div>
+      <h2 class="exercise-title">${ex.title}</h2>
+      <p class="exercise-desc">${ex.desc}</p>
+      <div class="info-box">${ex.info}</div>
+      <div class="scenario-box">
+        <div class="scenario-company">${ex.scenario.company}</div>
+        <div class="scenario-detail">${ex.scenario.detail}</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Opération</th><th>HTVA</th><th>Taux</th></tr></thead>
+          <tbody>${opTable}</tbody>
+        </table>
+      </div>
+
+      <h3 style="margin:24px 0 12px;color:#fff;font-size:1.1rem">Complète les comptes en T :</h3>
+
+      <div class="t-account">
+        <div class="t-account-header t-header-4110">Compte 4110 — TVA sur Achats</div>
+        <div class="t-account-body">
+          <div class="t-col t-col-left">
+            <div class="t-col-label">Débit (+)</div>
+            ${achatEntries}
+          </div>
+          <div class="t-col">
+            <div class="t-col-label">Crédit (−)</div>
+          </div>
+        </div>
+        <div class="t-account-footer">
+          <div class="t-footer-cell">
+            <span style="color:var(--text-dim)">SD :</span>
+            <input class="input-field" id="ex5sdA" placeholder="Solde" autocomplete="off" style="width:110px">
+          </div>
+          <div class="t-footer-cell"></div>
+        </div>
+      </div>
+
+      <div class="t-account">
+        <div class="t-account-header t-header-4510">Compte 4510 — TVA sur Ventes</div>
+        <div class="t-account-body">
+          <div class="t-col t-col-left">
+            <div class="t-col-label">Débit (−)</div>
+          </div>
+          <div class="t-col">
+            <div class="t-col-label">Crédit (+)</div>
+            ${venteEntries}
+          </div>
+        </div>
+        <div class="t-account-footer">
+          <div class="t-footer-cell"></div>
+          <div class="t-footer-cell">
+            <span style="color:var(--text-dim)">SC :</span>
+            <input class="input-field" id="ex5scV" placeholder="Solde" autocomplete="off" style="width:110px">
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin:20px 0 10px;color:#fff;font-size:1.1rem">TVA nette :</h3>
+      <div class="calc-row">
+        <span class="calc-label">TVA ventes − TVA achats =</span>
+        <input class="input-field" id="ex5net" placeholder="Montant net" autocomplete="off" style="width:140px">
+        <span class="input-suffix">€</span>
+      </div>
+
+      <div class="feedback" id="ex5Feedback"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="checkEx5()">Vérifier ✓</button>
+        <button class="btn btn-secondary" onclick="goToExercise(${ex.number})">Suivant →</button>
+      </div>
+    </div>`;
+}
+
+function checkEx5() {
+  const ex = exercises[4];
+  const achats = ex.operations.filter(o => o.type === 'achat');
+  const ventes = ex.operations.filter(o => o.type === 'vente');
+  const totalAchats = achats.reduce((s, o) => s + o.tva, 0);
+  const totalVentes = ventes.reduce((s, o) => s + o.tva, 0);
+  const netTva = totalVentes - totalAchats;
+  let score = 0;
+
+  // Check achat entries
+  achats.forEach((o, i) => {
+    const inp = document.getElementById('ex5a' + i);
+    inp.disabled = true;
+    if (isClose(parseInput(inp.value), o.tva)) {
+      inp.classList.add('correct');
+      score++;
+    } else {
+      inp.classList.add('wrong');
+      inp.value = fmt(o.tva);
+    }
+  });
+
+  // Check vente entries
+  ventes.forEach((o, i) => {
+    const inp = document.getElementById('ex5v' + i);
+    inp.disabled = true;
+    if (isClose(parseInput(inp.value), o.tva)) {
+      inp.classList.add('correct');
+      score++;
+    } else {
+      inp.classList.add('wrong');
+      inp.value = fmt(o.tva);
+    }
+  });
+
+  // Check soldes
+  const sdA = document.getElementById('ex5sdA');
+  sdA.disabled = true;
+  if (isClose(parseInput(sdA.value), totalAchats)) { sdA.classList.add('correct'); score += 2; }
+  else { sdA.classList.add('wrong'); sdA.value = fmt(totalAchats); }
+
+  const scV = document.getElementById('ex5scV');
+  scV.disabled = true;
+  if (isClose(parseInput(scV.value), totalVentes)) { scV.classList.add('correct'); score += 2; }
+  else { scV.classList.add('wrong'); scV.value = fmt(totalVentes); }
+
+  // Check net
+  const netInp = document.getElementById('ex5net');
+  netInp.disabled = true;
+  if (isClose(parseInput(netInp.value), netTva, 0.05)) { netInp.classList.add('correct'); score += 2; }
+  else { netInp.classList.add('wrong'); netInp.value = fmt(netTva); }
+
+  // Bonus: check that max achievable is ex.maxScore
+  score = Math.min(score, ex.maxScore);
+  finishExercise('ex5', score, ex.maxScore);
+}
+
+// ======================================================================
+// EX 6: TVA NETTE
+// ======================================================================
+function renderEx6(ex) {
+  const area = document.getElementById('contentArea');
+
+  let casesHtml = ex.cases.map((c, ci) => {
+    let achatsRows = c.achats.map(a => `<tr><td>${a.desc}</td><td class="num">${fmt(a.htva)} €</td><td class="num rate-${a.rate}">${a.rate}%</td></tr>`).join('');
+    let ventesRows = c.ventes.map(v => `<tr><td>${v.desc}</td><td class="num">${fmt(v.htva)} €</td><td class="num rate-${v.rate}">${v.rate}%</td></tr>`).join('');
+    
+    return `
+      <div class="scenario-box" style="margin-top:${ci > 0 ? '28px' : '0'}">
+        <div class="scenario-company">${c.company}</div>
+        <div class="scenario-detail">${c.detail}</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th colspan="3" style="text-align:center;color:var(--debit)">Achats</th></tr>
+          <tr><th>Description</th><th>HTVA</th><th>Taux</th></tr></thead>
+          <tbody>${achatsRows}</tbody>
+        </table>
+        <table class="data-table" style="margin-top:8px">
+          <thead><tr><th colspan="3" style="text-align:center;color:var(--credit)">Ventes</th></tr>
+          <tr><th>Description</th><th>HTVA</th><th>Taux</th></tr></thead>
+          <tbody>${ventesRows}</tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0">
+        <div class="calc-row" style="flex:1;min-width:200px">
+          <span class="calc-label">TVA achats (4110) :</span>
+          <input class="input-field" id="ex6a${ci}" placeholder="0,00" autocomplete="off" style="width:120px">
+          <span class="input-suffix">€</span>
+        </div>
+        <div class="calc-row" style="flex:1;min-width:200px">
+          <span class="calc-label">TVA ventes (4510) :</span>
+          <input class="input-field" id="ex6v${ci}" placeholder="0,00" autocomplete="off" style="width:120px">
+          <span class="input-suffix">€</span>
+        </div>
+      </div>
+      <div class="calc-row">
+        <span class="calc-label">TVA nette :</span>
+        <input class="input-field" id="ex6n${ci}" placeholder="Montant" autocomplete="off" style="width:130px">
+        <span class="input-suffix">€</span>
+        <span style="color:var(--text-muted);margin-left:8px">→</span>
+        <div class="account-choice" style="gap:8px;min-width:200px">
+          <button class="account-btn" style="padding:8px 12px;font-size:0.8rem" data-ci="${ci}" data-s="verser" onclick="selectStatus(this)">À verser</button>
+          <button class="account-btn" style="padding:8px 12px;font-size:0.8rem" data-ci="${ci}" data-s="récupérer" onclick="selectStatus(this)">À récupérer</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <span class="exercise-number">Exercice ${ex.number}</span>
+        <span class="exercise-type">${ex.type} — ${ex.maxScore} pts</span>
+      </div>
+      <h2 class="exercise-title">${ex.title}</h2>
+      <p class="exercise-desc">${ex.desc}</p>
+      <div class="info-box">${ex.info}</div>
+      ${casesHtml}
+      <div class="feedback" id="ex6Feedback"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="checkEx6()">Vérifier ✓</button>
+        <button class="btn btn-secondary" onclick="goToExercise(${ex.number})">Suivant →</button>
+      </div>
+    </div>`;
+}
+
+const ex6Status = {};
+function selectStatus(btn) {
+  const ci = btn.dataset.ci;
+  const siblings = btn.parentElement.querySelectorAll('.account-btn');
+  siblings.forEach(b => b.classList.remove('selected-4110', 'selected-4510'));
+  btn.classList.add(btn.dataset.s === 'verser' ? 'selected-4510' : 'selected-4110');
+  ex6Status[ci] = btn.dataset.s;
+}
+
+function checkEx6() {
+  const ex = exercises[5];
+  let score = 0;
+
+  ex.cases.forEach((c, ci) => {
+    const aInp = document.getElementById('ex6a' + ci);
+    const vInp = document.getElementById('ex6v' + ci);
+    const nInp = document.getElementById('ex6n' + ci);
+    aInp.disabled = true; vInp.disabled = true; nInp.disabled = true;
+
+    if (isClose(parseInput(aInp.value), c.tvaAchats, 1)) { aInp.classList.add('correct'); score++; }
+    else { aInp.classList.add('wrong'); aInp.value = fmt(c.tvaAchats); }
+
+    if (isClose(parseInput(vInp.value), c.tvaVentes, 1)) { vInp.classList.add('correct'); score++; }
+    else { vInp.classList.add('wrong'); vInp.value = fmt(c.tvaVentes); }
+
+    if (isClose(parseInput(nInp.value), Math.abs(c.net), 1) || isClose(parseInput(nInp.value), c.net, 1)) {
+      nInp.classList.add('correct'); score++;
+    } else {
+      nInp.classList.add('wrong'); nInp.value = fmt(c.net);
+    }
+
+    // Check status
+    const statusBtns = document.querySelectorAll(`[data-ci="${ci}"]`);
+    statusBtns.forEach(b => {
+      b.disabled = true;
+      b.classList.remove('selected-4110', 'selected-4510');
+      if (b.dataset.s === c.status) b.classList.add('correct');
+    });
+    if (ex6Status[ci] === c.status) { score++; }
+    else {
+      const wrongBtn = document.querySelector(`[data-ci="${ci}"][data-s="${ex6Status[ci]}"]`);
+      if (wrongBtn) wrongBtn.classList.add('wrong');
+    }
+  });
+
+  finishExercise('ex6', score, ex.maxScore);
+}
+
+// ======================================================================
+// EX 7: SCÉNARIO COMPLET
+// ======================================================================
+function renderEx7(ex) {
+  const area = document.getElementById('contentArea');
+  const achats = ex.operations.filter(o => o.type === 'achat');
+  const ventes = ex.operations.filter(o => o.type === 'vente');
+
+  let opTable = ex.operations.map(o => `
+    <tr>
+      <td style="font-family:'Space Mono',monospace;font-size:0.8rem">${o.date}</td>
+      <td>${o.desc}</td>
+      <td class="num">${fmt(o.htva)} €</td>
+      <td class="num rate-${o.rate}">${o.rate}%</td>
+    </tr>
+  `).join('');
+
+  // Step 1: identify type + compute TVA for each
+  let step1Html = ex.operations.map((o, i) => `
+    <div class="question-group" id="ex7q${i}" style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div class="question-label">
+        <span class="q-num">${o.num}.</span> ${o.date} — ${escHtml(o.desc)} — <strong>${fmt(o.htva)} € HTVA</strong> à ${o.rate}%
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div class="account-choice" style="min-width:220px">
+          <button class="account-btn" style="padding:8px;font-size:0.78rem" data-qi="${i}" data-v="4110" onclick="selectEx7(this)">4110 Achats</button>
+          <button class="account-btn" style="padding:8px;font-size:0.78rem" data-qi="${i}" data-v="4510" onclick="selectEx7(this)">4510 Ventes</button>
+        </div>
+        <div class="input-row">
+          <span style="color:var(--text-dim);font-size:0.82rem">TVA :</span>
+          <input class="input-field" id="ex7tva${i}" placeholder="0,00" autocomplete="off" style="width:110px;font-size:0.85rem">
+          <span class="input-suffix">€</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Step 2: T-accounts
+  let achatEntries = achats.map((o, i) => `
+    <div class="t-entry">
+      <span class="t-entry-label">${o.date} ${(o.desc.split(' - ')[1] || '').substring(0,18)}</span>
+      <input class="input-field" id="ex7ta${i}" placeholder="0,00" autocomplete="off">
+    </div>
+  `).join('');
+
+  let venteEntries = ventes.map((o, i) => `
+    <div class="t-entry">
+      <span class="t-entry-label">${o.date} ${(o.desc.split(' - ')[1] || '').substring(0,18)}</span>
+      <input class="input-field" id="ex7tv${i}" placeholder="0,00" autocomplete="off">
+    </div>
+  `).join('');
+
+  area.innerHTML = `
+    <div class="exercise-card">
+      <div class="exercise-header">
+        <span class="exercise-number">Exercice ${ex.number}</span>
+        <span class="exercise-type">${ex.type} — ${ex.maxScore} pts</span>
+      </div>
+      <h2 class="exercise-title">${ex.title}</h2>
+      <p class="exercise-desc">${ex.desc}</p>
+      <div class="scenario-box">
+        <div class="scenario-company">${ex.scenario.company}</div>
+        <div class="scenario-detail">${ex.scenario.detail}</div>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Description</th><th>HTVA</th><th>Taux</th></tr></thead>
+          <tbody>${opTable}</tbody>
+        </table>
+      </div>
+
+      <h3 style="margin:28px 0 14px;color:#fff;font-size:1.15rem">Étape 1 : Identifie le compte et calcule la TVA</h3>
+      ${step1Html}
+
+      <h3 style="margin:28px 0 14px;color:#fff;font-size:1.15rem">Étape 2 : Remplis les comptes en T</h3>
+      
+      <div class="t-account">
+        <div class="t-account-header t-header-4110">Compte 4110 — TVA sur Achats</div>
+        <div class="t-account-body">
+          <div class="t-col t-col-left">
+            <div class="t-col-label">Débit (+)</div>
+            ${achatEntries}
+          </div>
+          <div class="t-col">
+            <div class="t-col-label">Crédit (−)</div>
+          </div>
+        </div>
+        <div class="t-account-footer">
+          <div class="t-footer-cell">
+            <span style="color:var(--text-dim)">SD :</span>
+            <input class="input-field" id="ex7sdA" placeholder="Solde" autocomplete="off" style="width:110px">
+          </div>
+          <div class="t-footer-cell"></div>
+        </div>
+      </div>
+
+      <div class="t-account">
+        <div class="t-account-header t-header-4510">Compte 4510 — TVA sur Ventes</div>
+        <div class="t-account-body">
+          <div class="t-col t-col-left">
+            <div class="t-col-label">Débit (−)</div>
+          </div>
+          <div class="t-col">
+            <div class="t-col-label">Crédit (+)</div>
+            ${venteEntries}
+          </div>
+        </div>
+        <div class="t-account-footer">
+          <div class="t-footer-cell"></div>
+          <div class="t-footer-cell">
+            <span style="color:var(--text-dim)">SC :</span>
+            <input class="input-field" id="ex7scV" placeholder="Solde" autocomplete="off" style="width:110px">
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin:20px 0 10px;color:#fff;font-size:1.15rem">Étape 3 : Calcule la TVA nette</h3>
+      <div class="calc-row">
+        <span class="calc-label">TVA ventes − TVA achats =</span>
+        <input class="input-field" id="ex7net" placeholder="Montant" autocomplete="off" style="width:140px">
+        <span class="input-suffix">€</span>
+      </div>
+      <div class="calc-row" style="margin-top:8px">
+        <span class="calc-label">Conclusion :</span>
+        <div class="account-choice" style="gap:8px">
+          <button class="account-btn" style="padding:8px 14px;font-size:0.85rem" id="ex7verser" onclick="ex7SetStatus('verser')">TVA à verser ✉️</button>
+          <button class="account-btn" style="padding:8px 14px;font-size:0.85rem" id="ex7recuperer" onclick="ex7SetStatus('récupérer')">Crédit TVA 🔄</button>
+        </div>
+      </div>
+
+      <div class="feedback" id="ex7Feedback"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="checkEx7()">Vérifier ✓</button>
+        <button class="btn btn-success" onclick="goToExercise(${exercises.length})" style="display:none" id="ex7Final">Voir mes résultats 🏆</button>
+      </div>
+    </div>`;
+}
+
+const ex7Answers = {};
+let ex7StatusVal = null;
+
+function selectEx7(btn) {
+  const qi = btn.dataset.qi;
+  const group = document.getElementById('ex7q' + qi);
+  group.querySelectorAll('.account-btn').forEach(b => b.classList.remove('selected-4110', 'selected-4510'));
+  btn.classList.add('selected-' + btn.dataset.v);
+  ex7Answers[qi] = btn.dataset.v;
+}
+
+function ex7SetStatus(s) {
+  ex7StatusVal = s;
+  document.getElementById('ex7verser').classList.remove('selected-4510', 'selected-4110');
+  document.getElementById('ex7recuperer').classList.remove('selected-4510', 'selected-4110');
+  if (s === 'verser') document.getElementById('ex7verser').classList.add('selected-4510');
+  else document.getElementById('ex7recuperer').classList.add('selected-4110');
+}
+
+function checkEx7() {
+  const ex = exercises[6];
+  const achats = ex.operations.filter(o => o.type === 'achat');
+  const ventes = ex.operations.filter(o => o.type === 'vente');
+  const totalAchats = achats.reduce((s, o) => s + o.tva, 0);
+  const totalVentes = ventes.reduce((s, o) => s + o.tva, 0);
+  const netTva = totalVentes - totalAchats;
+  const correctStatus = netTva >= 0 ? 'verser' : 'récupérer';
+  let score = 0;
+
+  // Step 1: check account + TVA for each operation
+  ex.operations.forEach((o, i) => {
+    const group = document.getElementById('ex7q' + i);
+    const btns = group.querySelectorAll('.account-btn');
+    const tvaInp = document.getElementById('ex7tva' + i);
+    const correctType = o.type === 'achat' ? '4110' : '4510';
+
+    btns.forEach(b => {
+      b.disabled = true;
+      b.classList.remove('selected-4110', 'selected-4510');
+      if (b.dataset.v === correctType) b.classList.add('correct');
+    });
+    tvaInp.disabled = true;
+
+    if (ex7Answers[i] === correctType) score++;
+    else {
+      const wb = group.querySelector(`[data-v="${ex7Answers[i]}"]`);
+      if (wb) wb.classList.add('wrong');
+    }
+
+    if (isClose(parseInput(tvaInp.value), o.tva)) { tvaInp.classList.add('correct'); score++; }
+    else { tvaInp.classList.add('wrong'); tvaInp.value = fmt(o.tva); }
+  });
+
+  // Step 2: T-account entries
+  achats.forEach((o, i) => {
+    const inp = document.getElementById('ex7ta' + i);
+    inp.disabled = true;
+    if (isClose(parseInput(inp.value), o.tva)) { inp.classList.add('correct'); score++; }
+    else { inp.classList.add('wrong'); inp.value = fmt(o.tva); }
+  });
+
+  ventes.forEach((o, i) => {
+    const inp = document.getElementById('ex7tv' + i);
+    inp.disabled = true;
+    if (isClose(parseInput(inp.value), o.tva)) { inp.classList.add('correct'); score++; }
+    else { inp.classList.add('wrong'); inp.value = fmt(o.tva); }
+  });
+
+  // Soldes
+  const sdA = document.getElementById('ex7sdA');
+  sdA.disabled = true;
+  if (isClose(parseInput(sdA.value), totalAchats, 0.5)) { sdA.classList.add('correct'); score++; }
+  else { sdA.classList.add('wrong'); sdA.value = fmt(totalAchats); }
+
+  const scV = document.getElementById('ex7scV');
+  scV.disabled = true;
+  if (isClose(parseInput(scV.value), totalVentes, 0.5)) { scV.classList.add('correct'); score++; }
+  else { scV.classList.add('wrong'); scV.value = fmt(totalVentes); }
+
+  // Net
+  const netInp = document.getElementById('ex7net');
+  netInp.disabled = true;
+  if (isClose(parseInput(netInp.value), netTva, 1) || isClose(parseInput(netInp.value), Math.abs(netTva), 1)) {
+    netInp.classList.add('correct'); score++;
+  } else { netInp.classList.add('wrong'); netInp.value = fmt(netTva); }
+
+  // Status
+  const vBtn = document.getElementById('ex7verser');
+  const rBtn = document.getElementById('ex7recuperer');
+  vBtn.disabled = true; rBtn.disabled = true;
+  vBtn.classList.remove('selected-4110', 'selected-4510');
+  rBtn.classList.remove('selected-4110', 'selected-4510');
+  if (correctStatus === 'verser') vBtn.classList.add('correct'); else rBtn.classList.add('correct');
+  if (ex7StatusVal === correctStatus) score++;
+  else if (ex7StatusVal) {
+    (ex7StatusVal === 'verser' ? vBtn : rBtn).classList.add('wrong');
+  }
+
+  score = Math.min(score, ex.maxScore);
+  finishExercise('ex7', score, ex.maxScore);
+  
+  document.getElementById('ex7Final').style.display = 'inline-flex';
+}
+
+// ======================================================================
+// FINISH EXERCISE & FEEDBACK
+// ======================================================================
+function finishExercise(exId, score, maxScore) {
+  // Don't overwrite if already completed with higher score
+  const prevScore = state.scores[exId] || 0;
+  if (score > prevScore) {
+    state.totalPoints += (score - prevScore);
+    state.scores[exId] = score;
+  }
+  state.completed[exId] = true;
+
+  const pct = Math.round((score / maxScore) * 100);
+  const fb = document.getElementById(exId + 'Feedback');
+  
+  let msg, cls;
+  if (pct === 100) {
+    msg = `🎉 <strong>Parfait !</strong> ${score}/${maxScore} points — Excellente maîtrise !`;
+    cls = 'success';
+  } else if (pct >= 70) {
+    msg = `👍 <strong>Bien joué !</strong> ${score}/${maxScore} points — Quelques petites erreurs à revoir.`;
+    cls = 'partial';
+  } else if (pct >= 40) {
+    msg = `📝 <strong>Pas mal, mais il faut encore travailler !</strong> ${score}/${maxScore} points — Revois la théorie et réessaie.`;
+    cls = 'partial';
+  } else {
+    msg = `💪 <strong>Courage !</strong> ${score}/${maxScore} points — N'hésite pas à relire le cours avant de réessayer.`;
+    cls = 'error';
+  }
+
+  fb.innerHTML = msg;
+  fb.className = 'feedback show ' + cls;
+
+  updateProgress();
+  renderNav();
+
+  if (pct === 100) launchConfetti();
+}
+
+// ======================================================================
+// RESULTS SCREEN
+// ======================================================================
+function renderResults() {
+  const area = document.getElementById('contentArea');
+  const pct = Math.round((state.totalPoints / state.maxPoints) * 100);
+  
+  let trophy, message;
+  if (pct >= 90) { trophy = '🏆'; message = 'Exceptionnel ! Tu maîtrises parfaitement la TVA !'; }
+  else if (pct >= 70) { trophy = '🥈'; message = 'Très bien ! Tu as de bonnes bases. Continue comme ça !'; }
+  else if (pct >= 50) { trophy = '🥉'; message = 'Pas mal ! Mais il y a encore des points à améliorer.'; }
+  else { trophy = '📚'; message = 'Il faut encore travailler. Revois le cours et réessaie !'; }
+
+  let rows = exercises.map(ex => {
+    const s = state.scores[ex.id] || 0;
+    const p = Math.round((s / ex.maxScore) * 100);
+    let cls = p === 100 ? 'perfect' : p >= 70 ? 'good' : p >= 40 ? 'mid' : 'low';
+    return `<div class="result-row">
+      <span class="ex-name">Ex. ${ex.number} — ${ex.title}</span>
+      <span class="ex-score ${cls}">${s}/${ex.maxScore}</span>
+    </div>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="exercise-card">
+      <div class="results-screen">
+        <span class="results-trophy">${trophy}</span>
+        <div class="results-score">${state.totalPoints} / ${state.maxPoints}</div>
+        <div class="results-label">${message}</div>
+        <div class="results-breakdown">${rows}</div>
+        <button class="btn btn-primary" onclick="resetAll()" style="font-size:1rem;padding:14px 32px">
+          Recommencer 🔄
+        </button>
+      </div>
+    </div>`;
+
+  if (pct >= 90) launchConfetti();
+}
+
+function resetAll() {
+  state.currentExercise = -1;
+  state.scores = {};
+  state.completed = {};
+  state.totalPoints = 0;
+  // Reset selection caches
+  Object.keys(ex1Answers).forEach(k => delete ex1Answers[k]);
+  Object.keys(ex4Answers).forEach(k => delete ex4Answers[k]);
+  Object.keys(ex6Status).forEach(k => delete ex6Status[k]);
+  Object.keys(ex7Answers).forEach(k => delete ex7Answers[k]);
+  ex7StatusVal = null;
+  updateProgress();
+  renderNav();
+  renderWelcome();
+}
+
+// ======================================================================
+// CONFETTI
+// ======================================================================
+function launchConfetti() {
+  const container = document.createElement('div');
+  container.className = 'confetti-container';
+  document.body.appendChild(container);
+  const colors = ['#4f8cff','#e879f9','#2dd4a0','#ffb347','#ffd700','#ff5f6d'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 1.5 + 's';
+    piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+    piece.style.width = (6 + Math.random() * 8) + 'px';
+    piece.style.height = (6 + Math.random() * 8) + 'px';
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    container.appendChild(piece);
+  }
+  setTimeout(() => container.remove(), 4000);
+}
+
+// ======================================================================
+// INIT
+// ======================================================================
+updateProgress();
+renderNav();
+renderWelcome();
+</script>
+</body>
+</html>
